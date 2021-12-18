@@ -1,26 +1,28 @@
 use anchor_lang::prelude::*;
 
+pub fn xgcd(a: u64, b: u64) -> u64 {
+  let mut old_r = a;
+  let mut r = b;
+  let mut old_s: i64 = 1;
+  let mut s: i64 = 0;
 
-pub fn sqrt_mod_p(n: u64, p: u64) -> Option<u64> {
-  let mod_n = n % p;
+  let mut q;
+  let mut prev: i64;
 
-  for i in 2..p {
-    if i.pow(2) % p == mod_n {
-      return Some(i); 
-    }
+  while r != 0 {
+    q = old_r / r;
+
+    prev = r as i64;
+    r = old_r - q * prev as u64;
+    old_r = prev as u64;
+
+    prev = s;
+    s = old_s - (q as i64 * prev) as i64;
+    old_s = prev;
   }
 
-  None
-}
-
-pub fn invrs_mod_p(n: u64, p: u64) -> u64 {
-  let mod_n = n % p;
-
-  for x in 1..p {
-    if (mod_n * x) % p == 1 {
-      return x;
-    }
+  match old_s > 0 {
+    true => old_s as u64,
+    false => (b as i64 + old_s) as u64 
   }
-
-  0
 }

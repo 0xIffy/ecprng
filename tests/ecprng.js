@@ -30,11 +30,14 @@ describe('ecprng', () => {
 
   it('Is gets a num!', async () => {
     // Add your test here.
-    const tx = await program.rpc.getNum({
+    const tx = await program.rpc.getNum(new anchor.BN(52), {
       accounts: {
         baseAccount: baseAccount.publicKey,
       },
     });
+
+    const account = await program.account.baseAccount.fetch(baseAccount.publicKey);
+    console.log(account.num);
     // console.log("Your transaction signature", tx);
   });
 });

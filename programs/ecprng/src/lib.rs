@@ -13,6 +13,7 @@ pub mod ecprng {
     let base_account = &mut ctx.accounts.base_account;
 
     base_account.curve = Curve::default();
+    base_account.num = 0;
 
     Ok(())
   }
@@ -30,14 +31,15 @@ pub mod ecprng {
     Ok(())
   }
 
-  pub fn get_num(ctx: Context<GetNum>, max: u64) -> Result<u64, u64> {
+  pub fn get_num(ctx: Context<GetNum>, max: u64) -> ProgramResult {
     let base_account = &mut ctx.accounts.base_account;
 
     let point: Point = base_account.curve.add().unwrap();
 
     let num = point.x + point.y;
 
-    Ok(num % max)
+    base_account.num = num % max;
+    Ok(())
   }
 }
 
@@ -66,6 +68,7 @@ pub struct GetNum<'info> {
 #[account]
 pub struct BaseAccount {
   curve: Curve,
+  num: u64,
 }
 
 
@@ -134,9 +137,12 @@ impl Curve {
     let denom1 = (2 * p1.y) % self.max;
     let denom2 = (self.max + p2.x - p1.x) % self.max;
 
+    // println!("{:?}", helper::invrs_mod_p(denom1, self.max));
+    // println!("{:?}", helper::xgcd(denom1, self.max));
+
     let d = match denom2 {
-      0 => ((3 * (p1.x.pow(2) % self.max) + self.a) * helper::invrs_mod_p(denom1, self.max)) % self.max,
-      _ => ((self.max + p2.y - p1.y) * helper::invrs_mod_p(denom2, self.max)) % self.max
+      0 => ((3 * (p1.x.pow(2) % self.max) + self.a) * helper::xgcd(denom1, self.max)) % self.max,
+      _ => ((self.max + p2.y - p1.y) * helper::xgcd(denom2, self.max)) % self.max
     };
 
     let x = (2 * self.max + d.pow(2) - p1.x - p2.x) % self.max;
@@ -145,10 +151,7 @@ impl Curve {
 
     self.curr = Some(Point { x, y });
 
-    match denom2 {
-      0 => Err(self.curr.clone().unwrap()),
-      _ => Ok(self.curr.clone().unwrap())
-    } 
+    Ok(self.curr.clone().unwrap())
   }
 
   fn mult(&mut self, n: u64) -> Point {
